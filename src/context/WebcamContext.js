@@ -12,71 +12,94 @@ export const useWebcam = () => {
 
 export const WebcamProvider = ({ children }) => {
   const [activeExams, setActiveExams] = useState([]);
-  const [webcamStreams, setWebcamStreams] = useState({});
+  const [webcamData, setWebcamData] = useState({});
 
-  const startExamMonitoring = (studentId, studentName, webcamStream) => {
-    const examData = {
-      studentId,
-      studentName,
-      startTime: new Date().toISOString(),
-      status: 'in-progress',
-      warnings: 0
-    };
+  // Load active exams from localStorage
+  const loadActiveExams = () => {
+    try {
+      const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      const results = JSON.parse(localStorage.getItem('results')) || [];
 
-    setActiveExams(prev => {
-      const filtered = prev.filter(exam => exam.studentId !== studentId);
-      return [...filtered, examData];
-    });
+      // Convert monitoring data to active exams format
+      const exams = Object.values(monitoringData)
+        .filter(student => {
+          const hasOngoingExam = localStorage.getItem(`exam_in_progress_${student.studentEmail}`);
+          const hasCompletedExam = results.some(result => result.studentEmail === student.studentEmail);
+          return hasOngoingExam && !hasCompletedExam;
+        })
+        .map(student => {
+          const user = users.find(u => u.email === student.studentEmail);
+          return {
+            studentId: student.studentEmail,
+            studentName: user?.name || 'Unknown Student',
+            studentEmail: student.studentEmail,
+            rollNumber: user?.rollNumber || 'N/A',
+            branch: user?.branch || 'N/A',
+            startTime: student.lastActivity || new Date().toISOString(),
+            warnings: student.violations || 0,
+            lastSnapshot: student.lastSnapshot,
+            isActive: student.isActive !== false
+          };
+        });
 
-    setWebcamStreams(prev => ({
-      ...prev,
-      [studentId]: webcamStream
-    }));
-
-    // Store in localStorage for persistence
-    const monitoringData = JSON.parse(localStorage.getItem('activeExams') || '{}');
-    monitoringData[studentId] = examData;
-    localStorage.setItem('activeExams', JSON.stringify(monitoringData));
+      setActiveExams(exams);
+      setWebcamData(monitoringData);
+    } catch (error) {
+      console.error('Error loading active exams:', error);
+    }
   };
 
-  const endExamMonitoring = (studentId) => {
-    setActiveExams(prev => prev.filter(exam => exam.studentId !== studentId));
-    
-    setWebcamStreams(prev => {
-      const newStreams = { ...prev };
-      delete newStreams[studentId];
-      return newStreams;
-    });
-
-    // Remove from localStorage
-    const monitoringData = JSON.parse(localStorage.getItem('activeExams') || '{}');
-    delete monitoringData[studentId];
-    localStorage.setItem('activeExams', JSON.stringify(monitoringData));
-  };
-
-  const addWarning = (studentId) => {
-    setActiveExams(prev => 
-      prev.map(exam => 
-        exam.studentId === studentId 
-          ? { ...exam, warnings: exam.warnings + 1 }
-          : exam
-      )
-    );
-  };
-
-  // Load active exams from localStorage on component mount
+  // Refresh data every 5 seconds
   useEffect(() => {
-    const storedExams = JSON.parse(localStorage.getItem('activeExams') || '{}');
-    const activeExamArray = Object.values(storedExams);
-    setActiveExams(activeExamArray);
+    loadActiveExams();
+    const interval = setInterval(loadActiveExams, 5000);
+    return () => clearInterval(interval);
   }, []);
+
+  const addWarning = (studentEmail) => {
+    const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
+    
+    if (monitoringData[studentEmail]) {
+      monitoringData[studentEmail].violations = (monitoringData[studentEmail].violations || 0) + 1;
+      monitoringData[studentEmail].lastActivity = new Date().toISOString();
+      
+      // Add warning snapshot
+      monitoringData[studentEmail].snapshots = monitoringData[studentEmail].snapshots || [];
+      monitoringData[studentEmail].snapshots.push({
+        timestamp: new Date().toISOString(),
+        type: 'warning',
+        violationType: 'manual_warning'
+      });
+      
+      localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+      loadActiveExams(); // Refresh data
+    }
+  };
+
+  const endExamMonitoring = (studentEmail) => {
+    const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
+    delete monitoringData[studentEmail];
+    localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+    
+    // Clear exam progress
+    localStorage.removeItem(`exam_in_progress_${studentEmail}`);
+    localStorage.removeItem(`webcam_interval_${studentEmail}`);
+    
+    loadActiveExams(); // Refresh data
+  };
+
+  const getStudentSnapshot = (studentEmail) => {
+    return webcamData[studentEmail]?.lastSnapshot || null;
+  };
 
   const value = {
     activeExams,
-    webcamStreams,
-    startExamMonitoring,
+    webcamData,
+    addWarning,
     endExamMonitoring,
-    addWarning
+    getStudentSnapshot,
+    refreshData: loadActiveExams
   };
 
   return (

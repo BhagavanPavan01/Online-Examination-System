@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { loginUser } from '../../utils/auth';
 import { useNavigate } from 'react-router-dom';
+import './Login.css';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -17,22 +18,38 @@ const Login = ({ onLogin }) => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+// In Login component, update the handleSubmit function:
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  
+  try {
     const result = loginUser(formData.email, formData.password);
     
     if (result.success) {
       onLogin(result.user);
-      navigate(result.user.role === 'admin' ? '/admin' : '/student');
+      
+      // Store user data in localStorage or context for easy access
+      localStorage.setItem('currentUser', JSON.stringify(result.user));
+      
+      // Navigate based on role
+      if (result.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/student');
+      }
     } else {
       setError(result.message);
     }
-  };
+  } catch (error) {
+    setError('Login failed. Please try again.');
+  }
+};
 
   return (
     <div className="container mt-5">
       <div className="row justify-center">
-        <div className="col-md-6">
+        <div className="col-md-7">
           <div className="card">
             <div className="card-header">
               <h3 className="text-center">Login</h3>

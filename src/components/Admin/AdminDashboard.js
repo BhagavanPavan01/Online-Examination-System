@@ -192,6 +192,12 @@ const AdminDashboard = () => {
                 >
                   🎥 Live Monitoring
                 </button>
+                <button
+                  className="btn btn-info"
+                  onClick={() => navigate('/admin/results')}
+                >
+                  View All Results with Roll Numbers
+                </button>
               </div>
             </div>
           </div>
@@ -238,78 +244,54 @@ const AdminDashboard = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="row">
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-header d-flex justify-between align-items-center">
-              <h5>Recent Results</h5>
-              <button
-                className="btn btn-sm btn-outline-primary"
-                onClick={() => navigate('/admin/results')}
-              >
-                View All
-              </button>
-            </div>
-            <div className="card-body">
-              <div className="table-responsive">
-                <table className="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Student</th>
-                      <th>Score</th>
-                      <th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getResults().slice(-5).reverse().map(result => (
-                      <tr key={result.id}>
-                        <td>{result.studentName}</td>
-                        <td>
-                          <span className={`badge ${result.score >= 50 ? 'badge-success' : 'badge-danger'}`}>
-                            {result.score}%
-                          </span>
-                        </td>
-                        <td>{new Date(result.submittedAt).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {getResults().length === 0 && (
-                <div className="text-center text-muted py-3">
-                  <p>No exam results yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-header d-flex justify-between align-items-center">
-              <h5>Recent Questions</h5>
-              <button
-                className="btn btn-sm btn-outline-primary"
-                onClick={() => navigate('/admin/questions')}
-              >
-                View All
-              </button>
+      <div className="col-md-6">
+        <div className="card">
+          <div className="card-header d-flex justify-between align-items-center">
+            <h5>Recent Results</h5>
+            <button
+              className="btn btn-sm btn-outline-primary"
+              onClick={() => navigate('/admin/results')}
+            >
+              View All
+            </button>
+          </div>
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Roll No.</th>
+                    <th>Branch</th>
+                    <th>Score</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getResults().slice(-5).reverse().map(result => (
+                    <tr key={result.id}>
+                      <td>{result.studentName}</td>
+                      <td>
+                        <code>{result.rollNumber || 'N/A'}</code>
+                      </td>
+                      <td>{result.branch || 'N/A'}</td>
+                      <td>
+                        <span className={`badge ${result.score >= 50 ? 'badge-success' : 'badge-danger'}`}>
+                          {result.score}%
+                        </span>
+                      </td>
+                      <td>{new Date(result.submittedAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="card-body">
-              {getQuestions().slice(-3).reverse().map((question, index) => (
-                <div key={question.id} className="border-bottom pb-2 mb-2">
-                  <h6 className="mb-1">Q: {question.question.substring(0, 60)}...</h6>
-                  <small className="text-muted">
-                    {question.options.length} options • {question.marks} marks
-                  </small>
-                </div>
-              ))}
-              {getQuestions().length === 0 && (
-                <div className="text-center text-muted py-3">
-                  <p>No questions added yet</p>
-                </div>
-              )}
-            </div>
+            {getResults().length === 0 && (
+              <div className="text-center text-muted py-3">
+                <p>No exam results yet</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

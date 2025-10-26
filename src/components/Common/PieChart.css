@@ -1,0 +1,127 @@
+/* PieChart.css */
+.pie-chart-container-5x5 {
+  width: 200px;
+  height: 200px;
+  padding: 12px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pie-chart-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.pie-chart-svg {
+  display: block;
+}
+
+.pie-chart-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.pie-chart-percentage {
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.pie-chart-label {
+  font-size: 9px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Compact Legend */
+.pie-chart-legend-compact {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  flex: 1;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+/* Performance Badge */
+.performance-badge-compact {
+  display: flex;
+  justify-content: center;
+}
+
+.badge-text {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Empty State */
+.pie-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.empty-subtext {
+  font-size: 9px;
+  opacity: 0.7;
+}

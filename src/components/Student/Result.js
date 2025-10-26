@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getStudentResults } from '../../utils/storage';
-import Speedometer from '../Common/Speedometer';
+import PieChart from '../Common/PieChart';
+
 
 const Result = ({ user }) => {
   const [results, setResults] = useState([]);
@@ -68,7 +69,7 @@ const Result = ({ user }) => {
                 <h5 className="mb-0">Performance Meter</h5>
               </div>
               <div className="card-body text-center">
-                <Speedometer score={latestResult.score} />
+                <PieChart score={latestResult.score} />
               </div>
             </div>
           </div>

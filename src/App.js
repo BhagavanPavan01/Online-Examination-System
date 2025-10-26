@@ -130,6 +130,7 @@ function App() {
               } 
             />
             
+            
             <Route path="/" element={<Navigate to={user ? (isAdmin(user) ? "/admin" : "/student") : "/login"} />} />
           </Routes>
         </div>
