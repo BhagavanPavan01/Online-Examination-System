@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStudentsByBranch, getBranches } from '../../utils/auth';
+import { getBranches } from '../../utils/auth';
 import './UserManagement.css';
 
 const UserManagement = () => {

@@ -1,5 +1,4 @@
 import React from 'react';
-import { isAdmin } from '../../utils/auth';
 
 
 const Navbar = ({ user, onLogout }) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getQuestions, getStudentResults } from '../../utils/storage';
-import PieChart from '../Common/PieChart';
+
 
 const StudentDashboard = ({ user }) => {
   const [stats, setStats] = useState({
