@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getResults } from '../../utils/storage';
 import { getBranches } from '../../utils/auth';
 import jsPDF from 'jspdf';
@@ -13,16 +13,8 @@ const ViewResults = () => {
     loadResults();
   }, []);
 
-  useEffect(() => {
-    filterResults();
-  }, [results, selectedBranch, searchTerm]);
-
-  const loadResults = () => {
-    const allResults = getResults();
-    setResults(allResults);
-  };
-
-  const filterResults = () => {
+  // Wrap filterResults with useCallback to make it stable
+  const filterResults = useCallback(() => {
     let filtered = results;
     
     if (selectedBranch !== 'all') {
@@ -42,6 +34,16 @@ const ViewResults = () => {
     }
     
     setFilteredResults(filtered);
+  }, [results, selectedBranch, searchTerm]);
+
+  // Add filterResults to dependencies
+  useEffect(() => {
+    filterResults();
+  }, [filterResults]);
+
+  const loadResults = () => {
+    const allResults = getResults();
+    setResults(allResults);
   };
 
   const calculateStatistics = () => {
@@ -244,6 +246,30 @@ const ViewResults = () => {
         <p>View and analyze student performance</p>
       </div>
 
+      {/* Statistics Cards */}
+      <div className="stats-grid">
+        <div className="stat-card primary">
+          <h3>Total Exams</h3>
+          <p>{filteredResults.length}</p>
+          <small>Completed attempts</small>
+        </div>
+        <div className="stat-card success">
+          <h3>Passed</h3>
+          <p>{filteredResults.filter(r => r.score >= 50).length}</p>
+          <small>Score ≥ 50%</small>
+        </div>
+        <div className="stat-card warning">
+          <h3>Failed</h3>
+          <p>{filteredResults.filter(r => r.score < 50).length}</p>
+          <small>Score &lt; 50%</small>
+        </div>
+        <div className="stat-card info">
+          <h3>Pass Rate</h3>
+          <p>{filteredResults.length > 0 ? Math.round((filteredResults.filter(r => r.score >= 50).length / filteredResults.length) * 100) : 0}%</p>
+          <small>Success ratio</small>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="filters-card">
         <div className="filter-row">
@@ -272,7 +298,7 @@ const ViewResults = () => {
             />
           </div>
           
-          <div className="filter-group">
+          <div className="filter-actions">
             <button 
               className="btn-primary"
               onClick={() => exportToPDF(selectedBranch)}
@@ -290,7 +316,7 @@ const ViewResults = () => {
         </div>
       </div>
 
-      {/* Results Table - Statistics section removed */}
+      {/* Results Table */}
       <div className="data-card">
         <div className="card-header">
           <h3>Student Results ({filteredResults.length})</h3>

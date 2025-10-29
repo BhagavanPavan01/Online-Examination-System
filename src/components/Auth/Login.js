@@ -205,7 +205,7 @@ const Login = ({ onLogin }) => {
         {/* Footer */}
         <div className="mt-4 sm:mt-6 text-center">
           <p className="text-xs text-gray-400">
-            © 2024 Your Brand. All rights reserved.
+            © 2025 BP creatives. All rights reserved.
           </p>
         </div>
       </div>

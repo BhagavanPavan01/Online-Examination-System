@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { registerUser, getStudentsByBranch, validateRollNumberFormat, generateRollNumber } from '../../utils/auth';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { registerUser, validateRollNumberFormat, generateRollNumber } from '../../utils/auth';
 import { useNavigate } from 'react-router-dom';
 import './RegistrationForm.css';
 
@@ -29,6 +30,45 @@ const RegistrationForm = () => {
   const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
   const years = ['2024', '2023', '2022', '2021'];
 
+  // Check password strength - wrapped with useCallback
+  const checkPasswordStrength = useCallback((password) => {
+    if (password.length < 6) return 'weak';
+    if (password.length < 8) return 'medium';
+    
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    const strengthCount = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length;
+    
+    if (strengthCount >= 3) return 'strong';
+    if (strengthCount >= 2) return 'medium';
+    return 'weak';
+  }, []);
+
+  // Validate roll number - wrapped with useCallback
+  const validateRollNumber = useCallback((rollNumber, branch) => {
+    if (!rollNumber) return 'Roll number is required';
+    if (!branch) return 'Please select branch first';
+    
+    // Check if roll number matches branch pattern
+    if (!validateRollNumberFormat(rollNumber, branch)) {
+      return `Roll number should start with ${branch.toUpperCase()}`;
+    }
+    
+    // Check if roll number already exists
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const existingUser = users.find(user => 
+      user.rollNumber && user.rollNumber.toUpperCase() === rollNumber.toUpperCase()
+    );
+    if (existingUser) {
+      return 'This roll number is already registered';
+    }
+    
+    return '';
+  }, []);
+
   // Generate suggested roll number when branch is selected
   useEffect(() => {
     if (formData.role === 'student' && formData.branch) {
@@ -43,7 +83,7 @@ const RegistrationForm = () => {
         }));
       }
     }
-  }, [formData.branch, formData.role]);
+  }, [formData.branch, formData.role, formData.rollNumber]);
 
   // Validate password strength
   useEffect(() => {
@@ -53,23 +93,7 @@ const RegistrationForm = () => {
     } else {
       setPasswordStrength('');
     }
-  }, [formData.password]);
-
-  const checkPasswordStrength = (password) => {
-    if (password.length < 6) return 'weak';
-    if (password.length < 8) return 'medium';
-    
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    const strengthCount = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length;
-    
-    if (strengthCount >= 3) return 'strong';
-    if (strengthCount >= 2) return 'medium';
-    return 'weak';
-  };
+  }, [formData.password, checkPasswordStrength]);
 
   const validateForm = () => {
     const errors = {};
@@ -144,27 +168,6 @@ const RegistrationForm = () => {
 
     // Clear general error when user makes changes
     if (error) setError('');
-  };
-
-  const validateRollNumber = (rollNumber, branch) => {
-    if (!rollNumber) return 'Roll number is required';
-    if (!branch) return 'Please select branch first';
-    
-    // Check if roll number matches branch pattern
-    if (!validateRollNumberFormat(rollNumber, branch)) {
-      return `Roll number should start with ${branch.toUpperCase()}`;
-    }
-    
-    // Check if roll number already exists
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const existingUser = users.find(user => 
-      user.rollNumber && user.rollNumber.toUpperCase() === rollNumber.toUpperCase()
-    );
-    if (existingUser) {
-      return 'This roll number is already registered';
-    }
-    
-    return '';
   };
 
   const handleUseSuggestion = () => {

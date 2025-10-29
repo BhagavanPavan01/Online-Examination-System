@@ -1,7 +1,8 @@
-import React from 'react';
-
+import React, { useState } from 'react';
 
 const Navbar = ({ user, onLogout }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Function to get user initials for profile photo
   const getUserInitials = (name) => {
     if (!name) return 'U';
@@ -30,65 +31,128 @@ const Navbar = ({ user, onLogout }) => {
     return colors[index];
   };
 
-  // Check if user has a photo URL (you can extend your user object to include photoUrl)
+  // Check if user has a photo URL
   const userPhotoUrl = user?.photoUrl;
 
   return (
     <nav className="modern-navbar">
       <div className="navbar-container">
-        {/* Brand/Logo */}
+        {/* Brand/Logo - Always visible on all screens */}
         <a className="navbar-brand" href="/">
           Online Exam System
         </a>
         
-        <div className="navbar-content">
-          {/* User Section */}
-          <div className="user-section">
-            {user ? (
-              <div className="user-profile">
-                
-                <div className="user-info">
-                  <span className="welcome-text">Welcome, {user.name}</span>
-                  <span className="user-role">{user.role}</span>
-                </div>
+        {/* Desktop Navigation - Right Side */}
+        <div className="navbar-content desktop-nav">
+          {user ? (
+            <div className="user-profile">
+              <div className="user-info">
+                <span className="welcome-text">Welcome, {user.name}</span>
+                <span className="user-role">{user.role}</span>
+              </div>
 
-                {/* Profile Photo - Show actual photo if available, otherwise show initials */}
-                {userPhotoUrl ? (
-                  <img 
-                    src={userPhotoUrl} 
-                    alt={`${user.name}'s profile`}
-                    className="profile-photo"
-                    style={{ 
-                      borderRadius: '25%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <div 
-                    className="profile-photo"
-                    style={{ background: getUserColor(user.name) }}
-                    title={`${user.name} (${user.role})`}
-                  >
-                    <div className="profile-initials">
-                      {getUserInitials(user.name)}
-                    </div>
+              {/* Profile Photo */}
+              {userPhotoUrl ? (
+                <img 
+                  src={userPhotoUrl} 
+                  alt={`${user.name}'s profile`}
+                  className="profile-photo"
+                />
+              ) : (
+                <div 
+                  className="profile-photo"
+                  style={{ background: getUserColor(user.name) }}
+                  title={`${user.name} (${user.role})`}
+                >
+                  <div className="profile-initials">
+                    {getUserInitials(user.name)}
                   </div>
-                )}
-                
+                </div>
+              )}
+              
+              <button 
+                className="logout-btn" 
+                onClick={onLogout}
+                aria-label="Logout"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="auth-links">
+              <a className="auth-link login-btn" href="/login">
+                Login
+              </a>
+              <a className="auth-link register-btn" href="/register">
+                Register
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Navigation - Only on small screens */}
+        <div className="mobile-nav">
+          {/* Mobile Toggle Button */}
+          <button 
+            className="mobile-toggle-btn"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className={`hamburger-line ${isMobileMenuOpen ? 'active' : ''}`}></span>
+            <span className={`hamburger-line ${isMobileMenuOpen ? 'active' : ''}`}></span>
+            <span className={`hamburger-line ${isMobileMenuOpen ? 'active' : ''}`}></span>
+          </button>
+
+          {/* Mobile Menu Dropdown */}
+          <div className={`mobile-menu ${isMobileMenuOpen ? 'active' : ''}`}>
+            {user ? (
+              <div className="mobile-user-section">
+                <div className="mobile-user-info">
+                  {userPhotoUrl ? (
+                    <img 
+                      src={userPhotoUrl} 
+                      alt={`${user.name}'s profile`}
+                      className="mobile-profile-photo"
+                    />
+                  ) : (
+                    <div 
+                      className="mobile-profile-photo"
+                      style={{ background: getUserColor(user.name) }}
+                    >
+                      <div className="profile-initials">
+                        {getUserInitials(user.name)}
+                      </div>
+                    </div>
+                  )}
+                  <div className="mobile-user-details">
+                    <span className="mobile-user-name">{user.name}</span>
+                    <span className="mobile-user-role">{user.role}</span>
+                  </div>
+                </div>
                 <button 
-                  className="logout-btn" 
-                  onClick={onLogout}
-                  aria-label="Logout"
+                  className="mobile-logout-btn" 
+                  onClick={() => {
+                    onLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
                 >
                   Logout
                 </button>
               </div>
             ) : (
-              <div className="auth-links">
-                <a className="auth-link" href="/login">
+              <div className="mobile-auth-links">
+                <a 
+                  className="mobile-auth-link mobile-login-btn" 
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
                   Login
                 </a>
-                <a className="auth-link register-link" href="/register">
+                <a 
+                  className="mobile-auth-link mobile-register-btn" 
+                  href="/register"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
                   Register
                 </a>
               </div>

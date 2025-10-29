@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getBranches } from '../../utils/auth';
 import './UserManagement.css';
 
@@ -16,20 +16,13 @@ const UserManagement = () => {
   const [rollNumberInput, setRollNumberInput] = useState('');
   const [selectedBranchForRollNumber, setSelectedBranchForRollNumber] = useState('');
 
+  // Load users on component mount
   useEffect(() => {
     loadUsers();
   }, []);
 
-  useEffect(() => {
-    filterUsers();
-  }, [users, selectedBranch, selectedRole, searchTerm]);
-
-  const loadUsers = () => {
-    const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
-    setUsers(storedUsers);
-  };
-
-  const filterUsers = () => {
+  // Filter users function wrapped with useCallback
+  const filterUsers = useCallback(() => {
     let filtered = users;
 
     // Filter by branch
@@ -53,6 +46,16 @@ const UserManagement = () => {
     }
 
     setFilteredUsers(filtered);
+  }, [users, selectedBranch, selectedRole, searchTerm]);
+
+  // Apply filters when dependencies change
+  useEffect(() => {
+    filterUsers();
+  }, [filterUsers]);
+
+  const loadUsers = () => {
+    const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
+    setUsers(storedUsers);
   };
 
   const deleteUser = (email) => {
@@ -163,6 +166,28 @@ const UserManagement = () => {
     setSelectedBranchForRollNumber('');
   };
 
+  const validateRollNumber = (rollNumber, branch) => {
+    if (!rollNumber) return 'Roll number is required';
+    if (!branch) return 'Branch is required';
+
+    const expectedPrefix = branch.toUpperCase();
+    if (!rollNumber.toUpperCase().startsWith(expectedPrefix)) {
+      return `Roll number should start with ${expectedPrefix}`;
+    }
+
+    const existingUser = users.find(user =>
+      user.rollNumber && 
+      user.rollNumber.toUpperCase() === rollNumber.toUpperCase() &&
+      user.email !== selectedUserForRollNumber?.email
+    );
+    
+    if (existingUser) {
+      return 'This roll number is already assigned to another student';
+    }
+
+    return '';
+  };
+
   const assignRollNumber = () => {
     if (!rollNumberInput) {
       alert('Please enter a roll number');
@@ -194,28 +219,6 @@ const UserManagement = () => {
     setMessage(`Roll number ${rollNumberInput.toUpperCase()} assigned successfully`);
     closeRollNumberModal();
     setTimeout(() => setMessage(''), 3000);
-  };
-
-  const validateRollNumber = (rollNumber, branch) => {
-    if (!rollNumber) return 'Roll number is required';
-    if (!branch) return 'Branch is required';
-
-    const expectedPrefix = branch.toUpperCase();
-    if (!rollNumber.toUpperCase().startsWith(expectedPrefix)) {
-      return `Roll number should start with ${expectedPrefix}`;
-    }
-
-    const existingUser = users.find(user =>
-      user.rollNumber && 
-      user.rollNumber.toUpperCase() === rollNumber.toUpperCase() &&
-      user.email !== selectedUserForRollNumber?.email
-    );
-    
-    if (existingUser) {
-      return 'This roll number is already assigned to another student';
-    }
-
-    return '';
   };
 
   const generateRollNumber = () => {

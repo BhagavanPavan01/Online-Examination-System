@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Common/Navbar';
+import Footer from './components/Common/Footer'; // Import Footer
+import Showcase from './components/Home/Showcase';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -15,6 +17,29 @@ import Result from './components/Student/Result';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import { WebcamProvider } from './context/WebcamContext';
 import { getCurrentUser, isAdmin } from './utils/auth';
+import './App.css'; // Make sure to import App.css
+
+// Component to conditionally show footer
+const Layout = ({ children }) => {
+  const location = useLocation();
+  
+  // Don't show footer on these routes
+  const noFooterRoutes = [
+    '/admin', '/admin/add-question', '/admin/questions', '/admin/results', 
+    '/admin/users', '/admin/monitoring', '/student', '/exam', '/result'
+  ];
+  
+  const showFooter = !noFooterRoutes.some(route => 
+    location.pathname.startsWith(route)
+  );
+
+  return (
+    <>
+      {children}
+      {showFooter && <Footer />}
+    </>
+  );
+};
 
 function App() {
   const [user, setUser] = useState(null);
@@ -37,24 +62,37 @@ function App() {
     <WebcamProvider>
       <div className="App">
         <Navbar user={user} onLogout={handleLogout} />
-        <div className="container-fluid p-0">
+        <div className="main-content">
           <Routes>
+            {/* Public Routes */}
+            <Route 
+              path="/" 
+              element={
+                <Layout>
+                  <Showcase user={user} />
+                </Layout>
+              } 
+            />
             <Route 
               path="/login" 
               element={
                 user ? <Navigate to={isAdmin(user) ? "/admin" : "/student"} /> : 
-                <Login onLogin={handleLogin} />
+                <Layout>
+                  <Login onLogin={handleLogin} />
+                </Layout>
               } 
             />
             <Route 
               path="/register" 
               element={
                 user ? <Navigate to={isAdmin(user) ? "/admin" : "/student"} /> : 
-                <Register />
+                <Layout>
+                  <Register onLogin={handleLogin} />
+                </Layout>
               } 
             />
             
-            {/* Admin Routes */}
+            {/* Admin Routes - No Footer */}
             <Route 
               path="/admin" 
               element={
@@ -104,7 +142,7 @@ function App() {
               } 
             />
             
-            {/* Student Routes */}
+            {/* Student Routes - No Footer */}
             <Route 
               path="/student" 
               element={
@@ -130,8 +168,11 @@ function App() {
               } 
             />
             
-            
-            <Route path="/" element={<Navigate to={user ? (isAdmin(user) ? "/admin" : "/student") : "/login"} />} />
+            {/* Fallback Route */}
+            <Route 
+              path="*" 
+              element={<Navigate to="/" />} 
+            />
           </Routes>
         </div>
       </div>

@@ -11,40 +11,14 @@ const Exam = ({ user }) => {
   const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes in seconds
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [webcamEnabled, setWebcamEnabled] = useState(false);
-  const [fullScreen, setFullScreen] = useState(false);
   const [violations, setViolations] = useState(0);
   const webcamRef = useRef(null);
   const captureIntervalRef = useRef(null);
   const navigate = useNavigate();
   const { addWarning, endExamMonitoring } = useWebcam();
 
-  // Load exam progress from localStorage
-  useEffect(() => {
-    const savedProgress = localStorage.getItem(`exam_progress_${user.email}`);
-    const savedTime = localStorage.getItem(`exam_time_${user.email}`);
-    
-    if (savedProgress) {
-      const progress = JSON.parse(savedProgress);
-      setAnswers(progress.answers || {});
-      setCurrentQuestion(progress.currentQuestion || 0);
-    }
-    
-    if (savedTime) {
-      setTimeLeft(parseInt(savedTime));
-    }
-
-    const loadedQuestions = getQuestions();
-    setQuestions(loadedQuestions);
-    
-    // Mark exam as in progress
-    localStorage.setItem(`exam_in_progress_${user.email}`, 'true');
-    
-    // Initialize monitoring data
-    initializeMonitoringData();
-  }, [user.email]);
-
-  // Initialize monitoring data in localStorage
-  const initializeMonitoringData = () => {
+  // Initialize monitoring data in localStorage - wrapped with useCallback
+  const initializeMonitoringData = useCallback(() => {
     const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
     monitoringData[user.email] = {
       studentEmail: user.email,
@@ -59,38 +33,85 @@ const Exam = ({ user }) => {
       startTime: new Date().toISOString()
     };
     localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
-  };
+  }, [user.email, user.name, user.rollNumber, user.branch]);
 
-  // Save progress to localStorage
-  useEffect(() => {
-    if (questions.length > 0) {
-      const progress = {
-        answers,
-        currentQuestion,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem(`exam_progress_${user.email}`, JSON.stringify(progress));
+  // Cleanup function - wrapped with useCallback
+  const cleanupExam = useCallback(() => {
+    localStorage.removeItem(`exam_in_progress_${user.email}`);
+    localStorage.removeItem(`exam_progress_${user.email}`);
+    localStorage.removeItem(`exam_time_${user.email}`);
+    
+    // Clear webcam interval
+    if (captureIntervalRef.current) {
+      clearInterval(captureIntervalRef.current);
     }
-  }, [answers, currentQuestion, questions.length, user.email]);
+    
+    // Stop webcam
+    if (webcamRef.current && webcamRef.current.stream) {
+      webcamRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+    
+    // End monitoring
+    endExamMonitoring(user.email);
+  }, [user.email, endExamMonitoring]);
 
-  // Save time to localStorage
-  useEffect(() => {
-    localStorage.setItem(`exam_time_${user.email}`, timeLeft.toString());
-  }, [timeLeft, user.email]);
-
-  // Update last activity timestamp periodically
-  useEffect(() => {
-    const activityInterval = setInterval(() => {
-      const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
-      if (monitoringData[user.email]) {
-        monitoringData[user.email].lastActivity = new Date().toISOString();
-        localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+  // Capture webcam snapshot and save to monitoring system - wrapped with useCallback
+  const captureWebcamSnapshot = useCallback(() => {
+    if (webcamRef.current && !isSubmitted) {
+      try {
+        const imageSrc = webcamRef.current.getScreenshot();
+        if (imageSrc) {
+          saveWebcamSnapshot(imageSrc);
+        }
+      } catch (error) {
+        console.error('Error capturing webcam snapshot:', error);
       }
-    }, 30000); // Update every 30 seconds
+    }
+  }, [isSubmitted]);
 
-    return () => clearInterval(activityInterval);
-  }, [user.email]);
+  // Save webcam snapshot to monitoring system
+  const saveWebcamSnapshot = useCallback((imageData) => {
+    const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
+    
+    if (!monitoringData[user.email]) {
+      monitoringData[user.email] = {
+        studentEmail: user.email,
+        studentName: user.name,
+        rollNumber: user.rollNumber || 'N/A',
+        branch: user.branch || 'N/A',
+        lastSnapshot: imageData,
+        lastActivity: new Date().toISOString(),
+        snapshots: [],
+        violations: 0,
+        isActive: true,
+        startTime: new Date().toISOString()
+      };
+    }
 
+    monitoringData[user.email].lastSnapshot = imageData;
+    monitoringData[user.email].lastActivity = new Date().toISOString();
+    
+    // Add to snapshots array (keep only last 20 to save space)
+    monitoringData[user.email].snapshots.push({
+      imageData,
+      timestamp: new Date().toISOString(),
+      type: 'regular'
+    });
+
+    if (monitoringData[user.email].snapshots.length > 20) {
+      monitoringData[user.email].snapshots = monitoringData[user.email].snapshots.slice(-20);
+    }
+
+    localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+  }, [user.email, user.name, user.rollNumber, user.branch]);
+
+  // Handle full screen change
+  const handleFullScreenChange = useCallback(() => {
+    // Removed unused fullScreen state
+    console.log('Full screen changed:', !!document.fullscreenElement);
+  }, []);
+
+  // Handle submit function - wrapped with useCallback
   const handleSubmit = useCallback(() => {
     if (isSubmitted) return;
 
@@ -130,27 +151,62 @@ const Exam = ({ user }) => {
     setTimeout(() => {
       navigate('/result');
     }, 3000);
-  }, [isSubmitted, questions, answers, user, timeLeft, violations, navigate]);
+  }, [isSubmitted, questions, answers, user, timeLeft, violations, navigate, cleanupExam]);
 
-  // Cleanup function
-  const cleanupExam = () => {
-    localStorage.removeItem(`exam_in_progress_${user.email}`);
-    localStorage.removeItem(`exam_progress_${user.email}`);
-    localStorage.removeItem(`exam_time_${user.email}`);
+  // Load exam progress from localStorage
+  useEffect(() => {
+    const savedProgress = localStorage.getItem(`exam_progress_${user.email}`);
+    const savedTime = localStorage.getItem(`exam_time_${user.email}`);
     
-    // Clear webcam interval
-    if (captureIntervalRef.current) {
-      clearInterval(captureIntervalRef.current);
+    if (savedProgress) {
+      const progress = JSON.parse(savedProgress);
+      setAnswers(progress.answers || {});
+      setCurrentQuestion(progress.currentQuestion || 0);
     }
     
-    // Stop webcam
-    if (webcamRef.current && webcamRef.current.stream) {
-      webcamRef.current.stream.getTracks().forEach(track => track.stop());
+    if (savedTime) {
+      setTimeLeft(parseInt(savedTime));
     }
+
+    const loadedQuestions = getQuestions();
+    setQuestions(loadedQuestions);
     
-    // End monitoring
-    endExamMonitoring(user.email);
-  };
+    // Mark exam as in progress
+    localStorage.setItem(`exam_in_progress_${user.email}`, 'true');
+    
+    // Initialize monitoring data
+    initializeMonitoringData();
+  }, [user.email, initializeMonitoringData]);
+
+  // Save progress to localStorage
+  useEffect(() => {
+    if (questions.length > 0) {
+      const progress = {
+        answers,
+        currentQuestion,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem(`exam_progress_${user.email}`, JSON.stringify(progress));
+    }
+  }, [answers, currentQuestion, questions.length, user.email]);
+
+  // Save time to localStorage
+  useEffect(() => {
+    localStorage.setItem(`exam_time_${user.email}`, timeLeft.toString());
+  }, [timeLeft, user.email]);
+
+  // Update last activity timestamp periodically
+  useEffect(() => {
+    const activityInterval = setInterval(() => {
+      const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
+      if (monitoringData[user.email]) {
+        monitoringData[user.email].lastActivity = new Date().toISOString();
+        localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+      }
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(activityInterval);
+  }, [user.email]);
 
   // Timer effect
   useEffect(() => {
@@ -201,86 +257,7 @@ const Exam = ({ user }) => {
         clearInterval(captureIntervalRef.current);
       }
     };
-  }, [questions.length, isSubmitted]);
-
-  // Capture webcam snapshot and save to monitoring system
-  const captureWebcamSnapshot = () => {
-    if (webcamRef.current && !isSubmitted) {
-      try {
-        const imageSrc = webcamRef.current.getScreenshot();
-        if (imageSrc) {
-          saveWebcamSnapshot(imageSrc);
-        }
-      } catch (error) {
-        console.error('Error capturing webcam snapshot:', error);
-      }
-    }
-  };
-
-  // Save webcam snapshot to monitoring system
-  const saveWebcamSnapshot = (imageData) => {
-    const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
-    
-    if (!monitoringData[user.email]) {
-      monitoringData[user.email] = {
-        studentEmail: user.email,
-        studentName: user.name,
-        rollNumber: user.rollNumber || 'N/A',
-        branch: user.branch || 'N/A',
-        lastSnapshot: imageData,
-        lastActivity: new Date().toISOString(),
-        snapshots: [],
-        violations: 0,
-        isActive: true,
-        startTime: new Date().toISOString()
-      };
-    }
-
-    monitoringData[user.email].lastSnapshot = imageData;
-    monitoringData[user.email].lastActivity = new Date().toISOString();
-    
-    // Add to snapshots array (keep only last 20 to save space)
-    monitoringData[user.email].snapshots.push({
-      imageData,
-      timestamp: new Date().toISOString(),
-      type: 'regular'
-    });
-
-    if (monitoringData[user.email].snapshots.length > 20) {
-      monitoringData[user.email].snapshots = monitoringData[user.email].snapshots.slice(-20);
-    }
-
-    localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
-  };
-
-  const handleFullScreenChange = () => {
-    setFullScreen(!!document.fullscreenElement);
-  };
-
-  const handleAnswerSelect = (questionIndex, optionIndex) => {
-    setAnswers({
-      ...answers,
-      [questionIndex]: optionIndex
-    });
-  };
-
-  const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
-  };
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-  };
+  }, [questions.length, isSubmitted, captureWebcamSnapshot, handleFullScreenChange]);
 
   // Detect tab switching and visibility changes
   useEffect(() => {
@@ -340,6 +317,31 @@ const Exam = ({ user }) => {
       handleSubmit();
     }
   }, [violations, isSubmitted, handleSubmit]);
+
+  const handleAnswerSelect = (questionIndex, optionIndex) => {
+    setAnswers({
+      ...answers,
+      [questionIndex]: optionIndex
+    });
+  };
+
+  const handleNext = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
 
   if (questions.length === 0) {
     return (
