@@ -19,10 +19,10 @@ const Footer = () => {
                 Secure, reliable, and feature-rich exam management system.
               </p>
               <div className="social-links">
-                <a href="#" className="social-link">📘</a>
-                <a href="#" className="social-link">🐦</a>
-                <a href="#" className="social-link">📷</a>
-                <a href="#" className="social-link">💼</a>
+                <button type="button" className="social-link">📘</button>
+                <button type="button" className="social-link">🐦</button>
+                <button type="button" className="social-link">📷</button>
+                <button type="button" className="social-link">💼</button>
               </div>
             </div>
           </div>
@@ -56,7 +56,7 @@ const Footer = () => {
             <h4 className="footer-title">Support</h4>
             <ul className="footer-links">
               <li><a href="mailto:support@exampro.com" className="footer-link">support@exampro.com</a></li>
-              <li><a href="tel:+11234567890" className="footer-link">📞 +91 9542377685</a></li>
+              <li><a href="tel:+919542377685" className="footer-link">📞 +91 9542377685</a></li>
               <li><span className="footer-link">🕒 24/7 Support</span></li>
               <li><Link to="/help" className="footer-link">Help Center</Link></li>
               <li><Link to="/docs" className="footer-link">Documentation</Link></li>
@@ -67,11 +67,11 @@ const Footer = () => {
           <div className="footer-section">
             <h4 className="footer-title">Legal</h4>
             <ul className="footer-links">
-              <li><Link to="#" className="footer-link">Privacy Policy</Link></li>
-              <li><Link to="#" className="footer-link">Terms of Service</Link></li>
-              <li><Link to="#" className="footer-link">Cookie Policy</Link></li>
-              <li><Link to="#" className="footer-link">Security</Link></li>
-              <li><Link to="#" className="footer-link">Compliance</Link></li>
+              <li><Link to="/privacy-policy" className="footer-link">Privacy Policy</Link></li>
+              <li><Link to="/terms-of-service" className="footer-link">Terms of Service</Link></li>
+              <li><Link to="/cookie-policy" className="footer-link">Cookie Policy</Link></li>
+              <li><Link to="/security" className="footer-link">Security</Link></li>
+              <li><Link to="/compliance" className="footer-link">Compliance</Link></li>
             </ul>
           </div>
 

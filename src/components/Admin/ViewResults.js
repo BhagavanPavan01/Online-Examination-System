@@ -167,8 +167,6 @@ const ViewResults = () => {
         doc.setFontSize(8);
       }
       
-      const users = JSON.parse(localStorage.getItem('users')) || [];
-      
       
       // Alternate row background
       if (index % 2 === 0) {
