@@ -67,11 +67,11 @@ const Footer = () => {
           <div className="footer-section">
             <h4 className="footer-title">Legal</h4>
             <ul className="footer-links">
-              <li><Link to="/privacy" className="footer-link">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="footer-link">Terms of Service</Link></li>
-              <li><Link to="/cookies" className="footer-link">Cookie Policy</Link></li>
-              <li><Link to="/security" className="footer-link">Security</Link></li>
-              <li><Link to="/compliance" className="footer-link">Compliance</Link></li>
+              <li><Link to="#" className="footer-link">Privacy Policy</Link></li>
+              <li><Link to="#" className="footer-link">Terms of Service</Link></li>
+              <li><Link to="#" className="footer-link">Cookie Policy</Link></li>
+              <li><Link to="#" className="footer-link">Security</Link></li>
+              <li><Link to="#" className="footer-link">Compliance</Link></li>
             </ul>
           </div>
 

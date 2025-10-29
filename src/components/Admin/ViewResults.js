@@ -168,7 +168,7 @@ const ViewResults = () => {
       }
       
       const users = JSON.parse(localStorage.getItem('users')) || [];
-      const user = users.find(u => u.email === result.studentEmail);
+      
       
       // Alternate row background
       if (index % 2 === 0) {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const WebcamContext = createContext();
 
@@ -14,8 +14,8 @@ export const WebcamProvider = ({ children }) => {
   const [activeExams, setActiveExams] = useState([]);
   const [webcamData, setWebcamData] = useState({});
 
-  // Load active exams from localStorage
-  const loadActiveExams = () => {
+  // Load active exams from localStorage - wrapped with useCallback
+  const loadActiveExams = useCallback(() => {
     try {
       const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
       const users = JSON.parse(localStorage.getItem('users')) || [];
@@ -39,7 +39,8 @@ export const WebcamProvider = ({ children }) => {
             startTime: student.lastActivity || new Date().toISOString(),
             warnings: student.violations || 0,
             lastSnapshot: student.lastSnapshot,
-            isActive: student.isActive !== false
+            isActive: student.isActive !== false,
+            snapshots: student.snapshots || []
           };
         });
 
@@ -48,16 +49,16 @@ export const WebcamProvider = ({ children }) => {
     } catch (error) {
       console.error('Error loading active exams:', error);
     }
-  };
+  }, []);
 
   // Refresh data every 5 seconds
   useEffect(() => {
     loadActiveExams();
     const interval = setInterval(loadActiveExams, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadActiveExams]); // Added dependency
 
-  const addWarning = (studentEmail) => {
+  const addWarning = useCallback((studentEmail) => {
     const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
     
     if (monitoringData[studentEmail]) {
@@ -71,27 +72,80 @@ export const WebcamProvider = ({ children }) => {
         type: 'warning',
         violationType: 'manual_warning'
       });
+
+      // Keep only last 50 snapshots to prevent memory issues
+      if (monitoringData[studentEmail].snapshots.length > 50) {
+        monitoringData[studentEmail].snapshots = monitoringData[studentEmail].snapshots.slice(-50);
+      }
       
       localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
       loadActiveExams(); // Refresh data
     }
-  };
+  }, [loadActiveExams]);
 
-  const endExamMonitoring = (studentEmail) => {
+  const endExamMonitoring = useCallback((studentEmail) => {
     const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
-    delete monitoringData[studentEmail];
-    localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+    
+    if (monitoringData[studentEmail]) {
+      // Mark as inactive instead of deleting immediately
+      monitoringData[studentEmail].isActive = false;
+      monitoringData[studentEmail].endTime = new Date().toISOString();
+      localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+    }
     
     // Clear exam progress
     localStorage.removeItem(`exam_in_progress_${studentEmail}`);
+    localStorage.removeItem(`exam_progress_${studentEmail}`);
+    localStorage.removeItem(`exam_time_${studentEmail}`);
     localStorage.removeItem(`webcam_interval_${studentEmail}`);
     
-    loadActiveExams(); // Refresh data
-  };
+    // Remove from active exams after a delay to allow cleanup
+    setTimeout(() => {
+      const updatedMonitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
+      if (updatedMonitoringData[studentEmail] && !updatedMonitoringData[studentEmail].isActive) {
+        delete updatedMonitoringData[studentEmail];
+        localStorage.setItem('webcamMonitoring', JSON.stringify(updatedMonitoringData));
+      }
+      loadActiveExams();
+    }, 5000);
+  }, [loadActiveExams]);
 
-  const getStudentSnapshot = (studentEmail) => {
+  const getStudentSnapshot = useCallback((studentEmail) => {
     return webcamData[studentEmail]?.lastSnapshot || null;
-  };
+  }, [webcamData]);
+
+  const getStudentMonitoringData = useCallback((studentEmail) => {
+    return webcamData[studentEmail] || null;
+  }, [webcamData]);
+
+  const clearOldMonitoringData = useCallback(() => {
+    try {
+      const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      Object.keys(monitoringData).forEach(email => {
+        const studentData = monitoringData[email];
+        const lastActivity = studentData.lastActivity;
+        
+        // Remove data older than 24 hours
+        if (lastActivity && lastActivity < twentyFourHoursAgo) {
+          delete monitoringData[email];
+        }
+      });
+      
+      localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
+      loadActiveExams();
+    } catch (error) {
+      console.error('Error clearing old monitoring data:', error);
+    }
+  }, [loadActiveExams]);
+
+  // Clean up old data every hour
+  useEffect(() => {
+    clearOldMonitoringData();
+    const cleanupInterval = setInterval(clearOldMonitoringData, 60 * 60 * 1000); // 1 hour
+    return () => clearInterval(cleanupInterval);
+  }, [clearOldMonitoringData]);
 
   const value = {
     activeExams,
@@ -99,7 +153,9 @@ export const WebcamProvider = ({ children }) => {
     addWarning,
     endExamMonitoring,
     getStudentSnapshot,
-    refreshData: loadActiveExams
+    getStudentMonitoringData,
+    refreshData: loadActiveExams,
+    clearOldMonitoringData
   };
 
   return (

@@ -55,20 +55,6 @@ const Exam = ({ user }) => {
     endExamMonitoring(user.email);
   }, [user.email, endExamMonitoring]);
 
-  // Capture webcam snapshot and save to monitoring system - wrapped with useCallback
-  const captureWebcamSnapshot = useCallback(() => {
-    if (webcamRef.current && !isSubmitted) {
-      try {
-        const imageSrc = webcamRef.current.getScreenshot();
-        if (imageSrc) {
-          saveWebcamSnapshot(imageSrc);
-        }
-      } catch (error) {
-        console.error('Error capturing webcam snapshot:', error);
-      }
-    }
-  }, [isSubmitted]);
-
   // Save webcam snapshot to monitoring system
   const saveWebcamSnapshot = useCallback((imageData) => {
     const monitoringData = JSON.parse(localStorage.getItem('webcamMonitoring')) || {};
@@ -104,6 +90,20 @@ const Exam = ({ user }) => {
 
     localStorage.setItem('webcamMonitoring', JSON.stringify(monitoringData));
   }, [user.email, user.name, user.rollNumber, user.branch]);
+
+  // Capture webcam snapshot and save to monitoring system - wrapped with useCallback
+  const captureWebcamSnapshot = useCallback(() => {
+    if (webcamRef.current && !isSubmitted) {
+      try {
+        const imageSrc = webcamRef.current.getScreenshot();
+        if (imageSrc) {
+          saveWebcamSnapshot(imageSrc);
+        }
+      } catch (error) {
+        console.error('Error capturing webcam snapshot:', error);
+      }
+    }
+  }, [isSubmitted, saveWebcamSnapshot]); // Added saveWebcamSnapshot dependency
 
   // Handle full screen change
   const handleFullScreenChange = useCallback(() => {
