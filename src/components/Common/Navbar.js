@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Route } from 'react-router-dom';
 
 const Navbar = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -39,7 +40,7 @@ const Navbar = ({ user, onLogout }) => {
       <div className="navbar-container">
         {/* Brand/Logo - Always visible on all screens */}
         <a className="navbar-brand" href="/">
-          Online Exam System
+          Online Examination System
         </a>
         
         {/* Desktop Navigation - Right Side */}
@@ -53,11 +54,14 @@ const Navbar = ({ user, onLogout }) => {
 
               {/* Profile Photo */}
               {userPhotoUrl ? (
+                
                 <img 
                   src={userPhotoUrl} 
                   alt={`${user.name}'s profile`}
                   className="profile-photo"
-                />
+                  
+                /> 
+                
               ) : (
                 <div 
                   className="profile-photo"

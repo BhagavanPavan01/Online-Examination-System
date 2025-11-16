@@ -192,12 +192,6 @@ const AdminDashboard = () => {
                 >
                   🎥 Live Monitoring
                 </button>
-                <button
-                  className="btn btn-info"
-                  onClick={() => navigate('/admin/results')}
-                >
-                  View All Results with Roll Numbers
-                </button>
               </div>
             </div>
           </div>

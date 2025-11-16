@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { registerUser, validateRollNumberFormat, generateRollNumber } from '../../utils/auth';
+import { registerUser } from '../../utils/auth';
 import { useNavigate } from 'react-router-dom';
 import './RegistrationForm.css';
 
@@ -21,14 +20,13 @@ const RegistrationForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [suggestedRollNumber, setSuggestedRollNumber] = useState('');
   const [passwordStrength, setPasswordStrength] = useState('');
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
 
-  const branches = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT', 'AIML', 'DS'];
+  const branches = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT', 'MCA', 'MBA','MTECH'];
   const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
-  const years = ['2024', '2023', '2022', '2021'];
+  const years = ['2026','2025','2024', '2023', '2022', '2021'];
 
   // Check password strength - wrapped with useCallback
   const checkPasswordStrength = useCallback((password) => {
@@ -46,44 +44,6 @@ const RegistrationForm = () => {
     if (strengthCount >= 2) return 'medium';
     return 'weak';
   }, []);
-
-  // Validate roll number - wrapped with useCallback
-  const validateRollNumber = useCallback((rollNumber, branch) => {
-    if (!rollNumber) return 'Roll number is required';
-    if (!branch) return 'Please select branch first';
-    
-    // Check if roll number matches branch pattern
-    if (!validateRollNumberFormat(rollNumber, branch)) {
-      return `Roll number should start with ${branch.toUpperCase()}`;
-    }
-    
-    // Check if roll number already exists
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const existingUser = users.find(user => 
-      user.rollNumber && user.rollNumber.toUpperCase() === rollNumber.toUpperCase()
-    );
-    if (existingUser) {
-      return 'This roll number is already registered';
-    }
-    
-    return '';
-  }, []);
-
-  // Generate suggested roll number when branch is selected
-  useEffect(() => {
-    if (formData.role === 'student' && formData.branch) {
-      const suggested = generateRollNumber(formData.branch);
-      setSuggestedRollNumber(suggested);
-      
-      // Auto-fill roll number if empty
-      if (!formData.rollNumber) {
-        setFormData(prev => ({
-          ...prev,
-          rollNumber: suggested
-        }));
-      }
-    }
-  }, [formData.branch, formData.role, formData.rollNumber]);
 
   // Validate password strength
   useEffect(() => {
@@ -132,8 +92,6 @@ const RegistrationForm = () => {
       
       if (!formData.rollNumber) {
         errors.rollNumber = 'Roll number is required';
-      } else if (!validateRollNumberFormat(formData.rollNumber, formData.branch)) {
-        errors.rollNumber = `Roll number should start with ${formData.branch?.toUpperCase()}`;
       }
 
       if (!formData.semester) {
@@ -170,21 +128,6 @@ const RegistrationForm = () => {
     if (error) setError('');
   };
 
-  const handleUseSuggestion = () => {
-    setFormData(prev => ({
-      ...prev,
-      rollNumber: suggestedRollNumber
-    }));
-    
-    // Clear roll number error
-    if (formErrors.rollNumber) {
-      setFormErrors(prev => ({
-        ...prev,
-        rollNumber: ''
-      }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -196,16 +139,6 @@ const RegistrationForm = () => {
       setFormErrors(errors);
       setLoading(false);
       return;
-    }
-
-    // Additional roll number validation for students
-    if (formData.role === 'student') {
-      const rollNumberError = validateRollNumber(formData.rollNumber, formData.branch);
-      if (rollNumberError) {
-        setFormErrors(prev => ({ ...prev, rollNumber: rollNumberError }));
-        setLoading(false);
-        return;
-      }
     }
 
     const userData = {
@@ -436,44 +369,16 @@ const RegistrationForm = () => {
 
                   <div className="form-group">
                     <label htmlFor="rollNumber">Roll Number *</label>
-                    <div className="roll-number-input-group">
-                      <input
-                        type="text"
-                        id="rollNumber"
-                        name="rollNumber"
-                        value={formData.rollNumber}
-                        onChange={handleChange}
-                        required
-                        placeholder="e.g., 2XXXXXXXXXX"
-                        className={`roll-number-input ${formErrors.rollNumber ? 'error' : ''}`}
-                        style={{
-                          borderColor: formData.rollNumber && validateRollNumber(formData.rollNumber, formData.branch) 
-                            ? '#ef4444' 
-                            : formData.rollNumber && !validateRollNumber(formData.rollNumber, formData.branch)
-                            ? '#10b981' 
-                            : '#e2e8f0'
-                        }}
-                      />
-                      {suggestedRollNumber && suggestedRollNumber !== formData.rollNumber && (
-                        <button
-                          type="button"
-                          className="suggestion-btn"
-                          onClick={handleUseSuggestion}
-                        >
-                          Use {suggestedRollNumber}
-                        </button>
-                      )}
-                    </div>
-                    <div className="input-hints">
-                      <small>
-                        Format: {formData.branch ? formData.branch.toUpperCase() : 'BRANCH'} + Number (e.g., {formData.branch ? formData.branch.toUpperCase() : 'CSE'}001)
-                      </small>
-                      {formData.rollNumber && (
-                        <small className={validateRollNumber(formData.rollNumber, formData.branch) ? 'text-error' : 'text-success'}>
-                          {validateRollNumber(formData.rollNumber, formData.branch) || '✓ Valid roll number format'}
-                        </small>
-                      )}
-                    </div>
+                    <input
+                      type="text"
+                      id="rollNumber"
+                      name="rollNumber"
+                      value={formData.rollNumber}
+                      onChange={handleChange}
+                      required
+                      placeholder="Enter your roll number"
+                      className={formErrors.rollNumber ? 'error' : ''}
+                    />
                     {formErrors.rollNumber && <span className="field-error">{formErrors.rollNumber}</span>}
                   </div>
                 </div>
@@ -515,10 +420,6 @@ const RegistrationForm = () => {
                     </div>
                   )}
                   {formErrors.password && <span className="field-error">{formErrors.password}</span>}
-                  <div className="password-hints">
-                    <small>• At least 6 characters</small>
-                    <small>• Mix of letters, numbers, and symbols</small>
-                  </div>
                 </div>
 
                 <div className="form-group">
@@ -534,9 +435,6 @@ const RegistrationForm = () => {
                     className={formErrors.confirmPassword ? 'error' : ''}
                   />
                   {formErrors.confirmPassword && <span className="field-error">{formErrors.confirmPassword}</span>}
-                  {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                    <small className="text-success">✓ Passwords match</small>
-                  )}
                 </div>
               </div>
             </div>
@@ -553,7 +451,7 @@ const RegistrationForm = () => {
               <button 
                 type="submit" 
                 className={`submit-btn ${loading ? 'loading' : ''}`}
-                disabled={loading || (formData.role === 'student' && !!validateRollNumber(formData.rollNumber, formData.branch))}
+                disabled={loading}
               >
                 {loading ? (
                   <>
